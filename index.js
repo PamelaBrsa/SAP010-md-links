@@ -3,15 +3,18 @@ const fetch = require('cross-fetch')
 
 
 
-function getLinks (data, diretorio) {
+
+function pegarLinks(data, diretorio) {
   const regex = /\[([^[\]]*?)\]\((https?:\/\/[^\s?#.].[^\s]*)\)/gm;
   const capturarRegex = [...data.matchAll(regex)];
   const resultado = capturarRegex.map((match) => ({
     text: match[1],
     href: match[2],
     file: diretorio
+    
   }));
   return resultado;
+  
 }
   
 
@@ -20,12 +23,13 @@ function mdLinks (diretorio, option = { validate: false}){
   return new Promise((resolver, rejeitar ) => {
     fs.promises.readFile(diretorio, 'utf8')
        .then((resultado) => {
-         const links = getLinks (resultado, diretorio);
+         const links = pegarLinks (resultado, diretorio);
+         console.log({option})
          if(option.validate) {
-          const requisitar = links.map((link) => validateLink(link));
+          const requisitar = links.map((link) => validarLink(link));
           Promise.all(requisitar)
-            .then((validateLink)=>{
-               resolver(validateLink);
+            .then((validarLink)=>{
+               resolver(validarLink);
             })
             .catch((error) =>{
               rejeitar(error);
@@ -39,7 +43,10 @@ function mdLinks (diretorio, option = { validate: false}){
   }
   
   function validarLink (link) {
+    //requisiçãp http para validar
+    
     return fetch (link.href)
+
     .then((resposta) =>{
       link.status = resposta.status;
       link.ok = 'OK';
@@ -54,7 +61,7 @@ function mdLinks (diretorio, option = { validate: false}){
       return link;
     })
   }
-     
+//  mdLinks('./arquivos/teste.md', {validate: true})    
 
 module.exports = mdLinks
-module.exports = validarLink
+// module.exports = validarLink
