@@ -19,23 +19,32 @@ function pegarLinks(data, diretorio) {
   
 
 
-function mdLinks (diretorio, option = { validate: false}){
+function mdLinks (diretorio, option = { validate: false, stats: false}){
   return new Promise((resolver, rejeitar ) => {
     fs.promises.readFile(diretorio, 'utf8')
        .then((resultado) => {
          const links = pegarLinks (resultado, diretorio);
-         console.log({option})
          if(option.validate) {
           const requisitar = links.map((link) => validarLink(link));
           Promise.all(requisitar)
-            .then((validarLink)=>{
-               resolver(validarLink);
+            .then((validarLink)=> {
+              if(option.stats) {
+                const stats= pegarEstatisticas(validarLink);
+                resolver({links: validarLink, stats});
+              } else {
+                resolver(validarLink);
+              }
             })
             .catch((error) =>{
               rejeitar(error);
             });
          }else {
-          resolver(links);
+          if(option.stats){
+            const stats = pegarEstatisticas(links);
+            resolver({links, stats});
+          }else {
+            resolver(links)
+          }
          }          
        });
       })
@@ -61,7 +70,22 @@ function mdLinks (diretorio, option = { validate: false}){
       return link;
     })
   }
+
+function pegarEstatisticas(links){
+  const total = links.length;
+  const exclusivo = [...new Set(links.map((link) => link.href))].length;
+  const quebrados = links.filter((link) => link.ok === 'FAIL').length;
+
+   return {
+    total: total,
+    exclusivo: exclusivo,
+    quebrados: quebrados
+  };
+}
+
+
+
+
 //  mdLinks('./arquivos/teste.md', {validate: true})    
 
-module.exports = mdLinks
-// module.exports = validarLink
+ module.exports = mdLinks
