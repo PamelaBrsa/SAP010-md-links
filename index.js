@@ -1,5 +1,6 @@
 const fs = require ('fs'); 
 const fetch = require('cross-fetch')
+const path = require('path');
 
 
 
@@ -14,42 +15,86 @@ function pegarLinks(data, diretorio) {
     
   }));
   return resultado;
-  
-}
-  
-
-
-function mdLinks (diretorio, option = { validate: false, stats: false}){
-  return new Promise((resolver, rejeitar ) => {
-    fs.promises.readFile(diretorio, 'utf8')
-       .then((resultado) => {
-         const links = pegarLinks (resultado, diretorio);
-         if(option.validate) {
-          const requisitar = links.map((link) => validarLink(link));
-          Promise.all(requisitar)
-            .then((validarLink)=> {
-              if(option.stats) {
-                const stats= pegarEstatisticas(validarLink);
-                resolver({links: validarLink, stats});
-              } else {
-                resolver(validarLink);
-              }
-            })
-            .catch((error) =>{
-              rejeitar(error);
-            });
-         }else {
-          if(option.stats){
-            const stats = pegarEstatisticas(links);
-            resolver({links, stats});
-          }else {
-            resolver(links)
-          }
-         }          
-       });
-      })
-
   }
+  
+  function arquivo(file) {
+    return new Promise((resolve, reject) => {
+      fs.promises.stat(file)
+        .then((stats) => resolve(stats.isDirectory()))
+        .catch(() => resolve(false));
+    });
+  }
+  
+  function mdlinks(file, options) {
+    return new Promise((resolve, reject) => {
+      arquivo(file)
+        .then((isDir) => {
+          if (isDir) {
+            fs.promises.readdir(file)
+              .then((files) => {
+                const promises = files.map((filename) => {
+                  const caminho = path.join(file, filename);
+                  return mdlinks(caminho, options);
+                });
+                Promise.all(promises)
+                  .then((resultados) => {
+                    const todosLinks = resultados.reduce((acc, links) => acc.concat(links), []);
+                    if (options.stats) {
+                      const stats = pegarEstatisticas(todosLinks);
+                      resolve({ links: todosLinks, stats });
+                    } else {
+                      resolve(todosLinks);
+                    }
+                  })
+                  .catch((error) => {
+                    reject(error);
+                  });
+              })
+              .catch((error) => {
+                reject(error);
+              });
+          } else {
+            const validarCaminho = path.extname(file).toLowerCase();
+            if (validarCaminho === '.md') {
+              fs.promises.readFile(file, 'utf-8')
+                .then((result) => {
+                  const links = pegarLinks(result, file);
+                  if (options.validate) {
+                    const solicitar = links.map((link) => validarLink(link));
+                    Promise.all(solicitar)
+                      .then((validatedLinks) => {
+                        if (options.stats) {
+                          const stats = pegarEstatisticas(validatedLinks);
+                          resolve({ links: validatedLinks, stats });
+                        } else {
+                          resolve(validatedLinks);
+                        }
+                      })
+                  } else {
+                    if (options.stats) {
+                      const stats = pegarEstatisticas(links);
+                      resolve({ links, stats });
+                    } else {
+                      resolve(links);
+                    }
+                  }
+                })
+                .catch(() => {
+                  console.log('caminho inexistente');
+                });
+            } else {
+              console.log('não é um caminho .md');
+            }
+          }
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  }
+  
+
+
   
   function validarLink (link) {
     //requisiçãp http para validar
@@ -88,4 +133,4 @@ function pegarEstatisticas(links){
 
 //  mdLinks('./arquivos/teste.md', {validate: true})    
 
- module.exports = mdLinks
+ module.exports = mdlinks
