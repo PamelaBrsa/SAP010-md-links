@@ -133,4 +133,4 @@ function pegarEstatisticas(links){
 
 //  mdLinks('./arquivos/teste.md', {validate: true})    
 
- module.exports = mdlinks
+ module.exports = {mdlinks, pegarLinks, validarLink, pegarEstatisticas}
