@@ -1,10 +1,13 @@
 # Markdown Links
 
+## Tecnologias e Ferramentas utilizadas:
+[![Tecnologias e Ferramentas utilizadas:](https://skillicons.dev/icons?i=js,github,git,jest,vscode)](https://skillicons.dev)
+
 ## Índice
 
 * [1. Prefácio](#1-prefácio)
 * [2. Guia de Instalação](#2-guia-de-instalação)
-* 
+
 
 
 ***
